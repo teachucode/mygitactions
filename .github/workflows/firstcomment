@@ -1,26 +1,38 @@
-name: Add Comment to Commit
+name: Add Comment for New File
 
 on:
-    push:
-        branches:
-            - main
+  push:
+    branches:
+      - main  # or any branch you want to monitor
 
 jobs:
-    add-comment:
-        runs-on: ubuntu-latest
+  add-comment:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 2  # We need at least 2 commits to compare
 
-        steps:
-            - name: Checkout repository
-                uses: actions/checkout@v2
+    - name: Check for new files and add comment
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        # Get the list of new files
+        new_files=$(git diff --name-only --diff-filter=A HEAD^ HEAD)
+        
+        # If there are new files, add a comment
+        if [ -n "$new_files" ]; then
+          for file in $new_files; do
+            echo "New file detected: $file"
+            git config user.name github-actions
+            git config user.email github-actions@github.com
+            git commit --amend -m "$(git log --format=%B -n1 HEAD)
 
-            - name: Set up Git
-                run: |
-                    git config --global user.name "Your Name"
-                    git config --global user.email "your-email@example.com"
-
-            - name: Add comment to commit
-                run: |
-                    git log -1 --pretty=%B > commit_message.txt
-                    echo "This is a new file" >> commit_message.txt
-                    git commit --amend -F commit_message.txt
-                    git push origin HEAD:main
+            This is a new file: $file"
+          done
+          git push --force-with-lease
+        else
+          echo "No new files detected."
+        fi
