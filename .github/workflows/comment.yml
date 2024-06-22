@@ -1,0 +1,14 @@
+name: Add Comment to Python File
+on:
+  push:
+    paths:
+    - '**.py'
+jobs:
+  comment:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check out repository
+      uses: actions/checkout@v2
+    - name: Add comment to Python file
+      run: |
+        echo "# This is a new Python file" >> $(git diff --name-only HEAD^ HEAD)
