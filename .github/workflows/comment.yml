@@ -20,10 +20,19 @@ jobs:
       with:
         python-version: '3.x'
 
+    - name: Determine previous commit
+      id: prev_commit
+      run: |
+        if git rev-parse HEAD^ > /dev/null 2>&1; then
+          echo "PREV_COMMIT=$(git rev-parse HEAD^)" >> $GITHUB_ENV
+        else
+          echo "PREV_COMMIT=$(git rev-list --max-parents=0 HEAD)" >> $GITHUB_ENV
+        fi
+
     - name: Find new Python files
       id: find_files
       run: |
-        git diff --name-only HEAD^ HEAD > new_files.txt
+        git diff --name-only ${{ env.PREV_COMMIT }} HEAD > new_files.txt
         grep '.py$' new_files.txt || echo "No new Python files found" && exit 0
 
     - name: Add comment to new Python files
