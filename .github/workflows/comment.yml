@@ -34,19 +34,32 @@ jobs:
     - name: Find new Python files
       id: find_files
       run: |
-        git diff --name-only ${{ env.PREV_COMMIT }} HEAD > new_files.txt
-        grep '.py$' new_files.txt || echo "No new Python files found" && exit 0
+        git diff --name-only ${{ env.PREV_COMMIT }} HEAD > new_files_temp.txt
+        grep '.py$' new_files_temp.txt > new_files.txt || true
+        if [ -s new_files.txt ]; then
+          echo "has_new_files=true" >> $GITHUB_ENV
+        else
+          echo "has_new_files=false" >> $GITHUB_ENV
+        fi
 
     - name: Add comment to new Python files
+      if: env.has_new_files == 'true'
       run: |
         for file in $(cat new_files.txt); do
+          echo '# Hello, this is a Python file' | cat - "$file" > temp && mv temp "$file"
+        done
+
+    - name: Update new_files.txt with new Python filenames
+      if: env.has_new_files == 'true'
+      run: |
+        for file in $(cat new_files_temp.txt); do
           if [[ $file == *.py ]]; then
-            echo '# Hello, this is a Python file' | cat - "$file" > temp && mv temp "$file"
             echo "$file" >> new_files.txt
           fi
         done
 
     - name: Commit changes
+      if: env.has_new_files == 'true'
       run: |
         git config --global user.name 'github-actions[bot]'
         git config --global user.email 'github-actions[bot]@users.noreply.github.com'
