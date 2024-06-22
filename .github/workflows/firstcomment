@@ -1,0 +1,31 @@
+name: New File Comment
+
+on:
+    create:
+        paths:
+            - '**'
+
+jobs:
+    comment:
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout repository
+                uses: actions/checkout@v2
+
+            - name: Add comment
+                uses: actions/github-script@v4
+                with:
+                    github-token: ${{ secrets.GITHUB_TOKEN }}
+                    script: |
+                        const message = 'this is a new file';
+                        const { owner, repo } = context.repo;
+                        const { sha } = context.payload.head_commit;
+                        const { path } = context.payload;
+                        const octokit = github.getOctokit(process.env.GH_TOKEN);
+                        await octokit.issues.createComment({
+                            owner,
+                            repo,
+                            issue_number: context.issue.number,
+                            body: message,
+                        });
