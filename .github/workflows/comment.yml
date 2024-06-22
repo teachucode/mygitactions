@@ -41,8 +41,17 @@ jobs:
           echo "has_new_files=false" >> $GITHUB_ENV
         fi
 
+    - name: Check new files
+      id: check_files
+      run: |
+        if [ -s new_files.txt ]; then
+          echo "::set-output name=has_new_files::true"
+        else
+          echo "::set-output name=has_new_files::false"
+        fi
+
     - name: Add comment to new Python files
-      if: env.has_new_files == 'true'
+      if: steps.check_files.outputs.has_new_files == 'true'
       run: |
         for file in $(cat new_files.txt); do
           if [[ $file == *.py ]]; then
@@ -51,7 +60,7 @@ jobs:
         done
 
     - name: Update text_files.txt with new Python filenames
-      if: env.has_new_files == 'true'
+      if: steps.check_files.outputs.has_new_files == 'true'
       run: |
         touch text_files.txt
         for file in $(cat new_files.txt); do
@@ -61,7 +70,7 @@ jobs:
         done
 
     - name: Commit changes
-      if: env.has_new_files == 'true'
+      if: steps.check_files.outputs.has_new_files == 'true'
       run: |
         git config --global user.name 'github-actions[bot]'
         git config --global user.email 'github-actions[bot]@users.noreply.github.com'
