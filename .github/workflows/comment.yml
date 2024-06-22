@@ -1,14 +1,44 @@
-name: Add Comment to Python File
+name: Add Comment to New Python Files
+
 on:
   push:
+    branches:
+      - main
     paths:
-    - '**.py'
+      - '**/*.py'
+
 jobs:
-  comment:
+  add_comment:
     runs-on: ubuntu-latest
+
     steps:
-    - name: Check out repository
+    - name: Checkout repository
       uses: actions/checkout@v2
-    - name: Add comment to Python file
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.x'
+
+    - name: Find new Python files
+      id: find_files
       run: |
-        echo "# This is a new Python file" >> $(git diff --name-only HEAD^ HEAD)
+        git diff --name-only HEAD^ HEAD > new_files.txt
+        grep '.py$' new_files.txt || echo "No new Python files found" && exit 0
+
+    - name: Add comment to new Python files
+      if: success() && steps.find_files.outputs.has_new_files != ''
+      run: |
+        for file in $(cat new_files.txt); do
+          if [[ $file == *.py ]]; then
+            echo '# This is a new Python file' | cat - "$file" > temp && mv temp "$file"
+          fi
+        done
+
+    - name: Commit changes
+      run: |
+        git config --global user.name 'github-actions[bot]'
+        git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+        git add .
+        git commit -m 'Add comment to new Python files'
+        git push
