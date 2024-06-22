@@ -1,4 +1,4 @@
-name: Add Comment to New Python Files
+name: Add Comment to New Python Files and Update text_files.txt
 
 on:
   push:
@@ -46,10 +46,20 @@ jobs:
           fi
         done
 
+    - name: Update text_files.txt with new Python filenames
+      if: success() && steps.find_files.outputs.has_new_files != ''
+      run: |
+        touch text_files.txt
+        for file in $(cat new_files.txt); do
+          if [[ $file == *.py ]]; then
+            echo "$file" >> text_files.txt
+          fi
+        done
+
     - name: Commit changes
       run: |
         git config --global user.name 'github-actions[bot]'
         git config --global user.email 'github-actions[bot]@users.noreply.github.com'
         git add .
-        git commit -m 'Add comment to new Python files'
+        git commit -m 'Add comment to new Python files and update text_files.txt'
         git push origin main
